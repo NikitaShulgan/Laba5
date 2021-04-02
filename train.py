@@ -104,7 +104,7 @@ def build_model():
   inputs = tf.keras.Input(shape=(RESIZE_TO, RESIZE_TO, 3))
   #x = img_augmentation(inputs)
   #x = tf.keras.preprocessing.image.random_brightness(x, 3.0)
-  x = EfficientNetB0(include_top=False, input_tensor=x, weights="imagenet")
+  x = EfficientNetB0(include_top=False, input_tensor=inputs, weights="imagenet")
   x.trainable = False
   x = layers.GlobalAveragePooling2D()(x.output)
   outputs = tf.keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
