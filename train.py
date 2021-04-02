@@ -51,22 +51,22 @@ TRAIN_SIZE = 12786
 #   layers.experimental.preprocessing.Rescaling(1./255)
 # ])
 
-def augment(image_label, seed):
-  image, label = image_label
-  #image, label = resize_and_rescale(image, label)
-#   tf.image.stateless_random_brightness(image, max_delta, seed)
-#   tf.image.stateless_random_contrast(image, lower, upper, seed)
-  image = tf.image.resize_with_crop_or_pad(image, IMG_SIZE + 6, IMG_SIZE + 6)
-  # Make a new seed
-  new_seed = tf.random.experimental.stateless_split(seed, num=1)[0, :]
-  # Random crop back to the original size
-#   image = tf.image.stateless_random_crop(
-#       image, size=[IMG_SIZE, IMG_SIZE, 3], seed=seed)
-  # Random brightness
-  image = tf.image.stateless_random_brightness(
-      image, max_delta=0.5, seed=new_seed)
-#   image = tf.clip_by_value(image, 0, 1)
-  return image, label
+# def augment(image_label, seed):
+#   image, label = image_label
+#   #image, label = resize_and_rescale(image, label)
+# #   tf.image.stateless_random_brightness(image, max_delta, seed)
+# #   tf.image.stateless_random_contrast(image, lower, upper, seed)
+#   image = tf.image.resize_with_crop_or_pad(image, IMG_SIZE + 6, IMG_SIZE + 6)
+#   # Make a new seed
+#   new_seed = tf.random.experimental.stateless_split(seed, num=1)[0, :]
+#   # Random crop back to the original size
+# #   image = tf.image.stateless_random_crop(
+# #       image, size=[IMG_SIZE, IMG_SIZE, 3], seed=seed)
+#   # Random brightness
+#   image = tf.image.stateless_random_brightness(
+#       image, max_delta=0.5, seed=new_seed)
+# #   image = tf.clip_by_value(image, 0, 1)
+#   return image, label
 
 # counter = tf.data.experimental.Counter()
 # train_ds = tf.data.Dataset.zip((train_datasets, (counter, counter)))
@@ -94,7 +94,7 @@ def create_dataset(filenames, batch_size):
   """
   #.map(augment, parse_proto_example, num_parallel_calls=tf.data.AUTOTUNE)
   return tf.data.TFRecordDataset(filenames)\
-    .map(f, num_parallel_calls=tf.data.AUTOTUNE)\
+    .map(parse_proto_example, num_parallel_calls=tf.data.AUTOTUNE)\
     .cache()\
     .batch(batch_size)\
     .prefetch(tf.data.AUTOTUNE)
@@ -126,6 +126,12 @@ def step_decay(epoch):
   
 lrate = LearningRateScheduler(step_decay)
 
+def unfreeze_model(model):
+    # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
+    for layer in model.layers[-20:]:
+        if not isinstance(layer, layers.BatchNormalization):
+            layer.trainable = True
+
 
 def main():
   args = argparse.ArgumentParser()
@@ -148,12 +154,30 @@ def main():
   log_dir='{}/owl-{}'.format(LOG_DIR, time.time())
   model.fit(
     train_dataset,
-    epochs=50,
+    epochs=20,
     validation_data=validation_dataset,
     callbacks=[
-      tf.keras.callbacks.TensorBoard(log_dir),
+      tf.keras.callbacks.TensorBoard(log_dir), lrate
     ]
   )
+  
+  unfreeze_model(model)
+  
+  model.compile(
+    optimizer=tf.optimizers.Adam(),
+    loss=tf.keras.losses.categorical_crossentropy,
+    metrics=[tf.keras.metrics.categorical_accuracy],
+  )
+  
+  model.fit(
+    train_dataset,
+    epochs=10,
+    validation_data=validation_dataset,
+    callbacks=[
+      tf.keras.callbacks.TensorBoard(log_dir), lrate
+    ]
+  )
+    
 
 
 if __name__ == '__main__':
