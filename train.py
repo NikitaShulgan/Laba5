@@ -124,7 +124,7 @@ def exp_decay(epoch):
 #            math.floor((1+epoch)/epochs_drop))
 #    return lrate
   
-lrate = LearningRateScheduler(step_decay)
+lrate = LearningRateScheduler(exp_decay)
 
 def unfreeze_model(model):
     # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
