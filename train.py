@@ -18,6 +18,7 @@ from tensorflow.keras.layers.experimental import preprocessing
 from tensorflow.keras import layers
 import tensorflow.keras.applications
 from tensorflow.keras.models import Sequential
+import math
 
 # Avoid greedy memory allocation to allow shared GPU usage
 gpus = tf.config.experimental.list_physical_devices('GPU')
