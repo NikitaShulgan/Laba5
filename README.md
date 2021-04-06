@@ -4,6 +4,8 @@
 
 #### owl-1617721605.0678256 ``` train_4 ```
 
+[Tensorboard](https://tensorboard.dev/experiment/1ku6PaQQRVOrNOR1ksrgvA/#scalars&runSelectionState=eyJ0cmFpbiI6ZmFsc2V9&_smoothingWeight=0)
+
 ![image](https://user-images.githubusercontent.com/80168174/113783107-eec9cf80-973b-11eb-93cf-b5d1fcee2be4.png)
 
 #### epoch_categorical_accuracy
