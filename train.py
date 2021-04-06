@@ -27,50 +27,22 @@ for gpu in gpus:
 
 
 LOG_DIR = 'logs'
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 NUM_CLASSES = 20
 RESIZE_TO = 224
 TRAIN_SIZE = 12786
 
-# img_augmentation = keras.Sequential(
-#     [
-#         preprocessing.RandomRotation(factor=0.15),
-#         preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
-#         preprocessing.RandomFlip(),
-#         preprocessing.RandomContrast(factor=0.1),
-#     ]
-# )
+img_augmentation = keras.Sequential(
+    [
+        preprocessing.RandomRotation(factor=0.01)
+    ]
+)
 
-# def augment(image, label):
-#   bright = tf.image.adjust_brightness(image, delta=0.1)
-#   contrast = tf.image.adjust_contrast(image, 2)
-#   return image, label
-
-
-# resize_and_rescale = tf.keras.Sequential([
-#   layers.experimental.preprocessing.Resizing(RESIZE_TO, RESIZE_TO),
-#   layers.experimental.preprocessing.Rescaling(1./255)
-# ])
-
-# def augment(image_label, seed):
-#   image, label = image_label
-#   #image, label = resize_and_rescale(image, label)
-# #   tf.image.stateless_random_brightness(image, max_delta, seed)
-# #   tf.image.stateless_random_contrast(image, lower, upper, seed)
-#   image = tf.image.resize_with_crop_or_pad(image, IMG_SIZE + 6, IMG_SIZE + 6)
-#   # Make a new seed
-#   new_seed = tf.random.experimental.stateless_split(seed, num=1)[0, :]
-#   # Random crop back to the original size
-# #   image = tf.image.stateless_random_crop(
-# #       image, size=[IMG_SIZE, IMG_SIZE, 3], seed=seed)
-#   # Random brightness
-#   image = tf.image.stateless_random_brightness(
-#       image, max_delta=0.5, seed=new_seed)
-# #   image = tf.clip_by_value(image, 0, 1)
-#   return image, label
-
-# counter = tf.data.experimental.Counter()
-# train_ds = tf.data.Dataset.zip((train_datasets, (counter, counter)))
+def augment(image, label):
+  bright = tf.image.adjust_brightness(image, delta=0.2)
+  contrast = tf.image.adjust_contrast(bright, contrast_factor=2)
+  crop = tf.image.random_crop(contrast, [RESIZE_TO, RESIZE_TO, 3])
+  return crop, label
 
 def parse_proto_example(proto):
   keys_to_features = {
@@ -80,7 +52,7 @@ def parse_proto_example(proto):
   example = tf.io.parse_single_example(proto, keys_to_features)
   example['image'] = tf.image.decode_jpeg(example['image/encoded'], channels=3)
   example['image'] = tf.image.convert_image_dtype(example['image'], dtype=tf.uint8)
-  example['image'] = tf.image.resize(example['image'], tf.constant([RESIZE_TO, RESIZE_TO]))
+  example['image'] = tf.image.resize(example['image'], tf.constant([230, 230]))
   return example['image'], tf.one_hot(example['image/label'], depth=NUM_CLASSES)
 
 
@@ -97,39 +69,40 @@ def create_dataset(filenames, batch_size):
   return tf.data.TFRecordDataset(filenames)\
     .map(parse_proto_example, num_parallel_calls=tf.data.AUTOTUNE)\
     .cache()\
+    .map(augment)\
     .batch(batch_size)\
     .prefetch(tf.data.AUTOTUNE)
 
 
 def build_model():
   inputs = tf.keras.Input(shape=(RESIZE_TO, RESIZE_TO, 3))
-  #x = img_augmentation(inputs)
-  #x = tf.keras.preprocessing.image.random_brightness(x, 3.0)
+  x = tf.keras.layers.GaussianNoise(stddev=0.05)(inputs)
+  x = img_augmentation(x)
   x = EfficientNetB0(include_top=False, input_tensor=inputs, weights="imagenet")
   x.trainable = False
   x = layers.GlobalAveragePooling2D()(x.output)
   outputs = tf.keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
   return tf.keras.Model(inputs=inputs, outputs=outputs)
 
-# def exp_decay(epoch):
-#    initial_lrate = 0.01
-#    k = 0.6
-#    lrate = initial_lrate * math.exp(-k*t)
-#    return lrate
-
-def step_decay(epoch):
-   initial_lrate = 0.1
-   drop = 0.6
-   epochs_drop = 5.0
-   lrate = initial_lrate * math.pow(drop,  
-           math.floor((1+epoch)/epochs_drop))
+def exp_decay(epoch):
+   initial_lrate = 0.01
+   k = 0.6
+   lrate = initial_lrate * math.exp(-k*t)
    return lrate
+
+# def step_decay(epoch):
+#    initial_lrate = 0.1
+#    drop = 0.6
+#    epochs_drop = 5.0
+#    lrate = initial_lrate * math.pow(drop,  
+#            math.floor((1+epoch)/epochs_drop))
+#    return lrate
   
-lrate = LearningRateScheduler(step_decay)
+lrate = LearningRateScheduler(exp_decay)
 
 def unfreeze_model(model):
     # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
-    for layer in model.layers[-20:]:
+    for layer in model.layers:
         if not isinstance(layer, layers.BatchNormalization):
             layer.trainable = True
 
@@ -165,7 +138,7 @@ def main():
   unfreeze_model(model)
   
   model.compile(
-    optimizer=tf.optimizers.Adam(),
+    optimizer=tf.optimizers.Adam(learning_rate=1e-5),
     loss=tf.keras.losses.categorical_crossentropy,
     metrics=[tf.keras.metrics.categorical_accuracy],
   )
@@ -175,7 +148,7 @@ def main():
     epochs=10,
     validation_data=validation_dataset,
     callbacks=[
-      tf.keras.callbacks.TensorBoard(log_dir), lrate
+      tf.keras.callbacks.TensorBoard(log_dir)
     ]
   )
     
