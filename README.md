@@ -17,6 +17,8 @@
 
 ### 3. С использованием техники обучения Fine Tuning дополнительно обучить нейронную сеть EfficientNet-B0 предварительно обученную в пункте 2.
 
+[Tensorboard](https://tensorboard.dev/experiment/nIvrrs8HQje3UDYC4FbnAw/#scalars&runSelectionState=eyJvd2wtMTYxNzczNjcwMi4wNjIxNzIvdHJhaW4iOmZhbHNlLCJvd2wtMTYxNzczNjcwMi4wNjIxNzIvdmFsaWRhdGlvbiI6ZmFsc2UsIm93bC0xNjE3NzM3NTQ3LjM3ODYzMzUvdHJhaW4iOmZhbHNlLCJvd2wtMTYxNzczNzU0Ny4zNzg2MzM1L3ZhbGlkYXRpb24iOmZhbHNlLCJvd2wtMTYxNzczODYxMy44ODI2MDI1L3RyYWluIjpmYWxzZSwib3dsLTE2MTc3Mzg2MTMuODgyNjAyNS92YWxpZGF0aW9uIjpmYWxzZSwib3dsLTE2MTc3NDA0NTkuMjk1NjM1NS90cmFpbiI6ZmFsc2UsIm93bC0xNjE3NzQwNDU5LjI5NTYzNTUvdmFsaWRhdGlvbiI6dHJ1ZSwib3dsLTE2MTc3NDIyNTAuNzM2NzUzMi90cmFpbiI6ZmFsc2UsIm93bC0xNjE3NzQyMjUwLjczNjc1MzIvdmFsaWRhdGlvbiI6dHJ1ZSwib3dsLTE2MTc3NDQwNzMuODk2Nzg3L3RyYWluIjpmYWxzZSwib3dsLTE2MTc3NDQwNzMuODk2Nzg3L3ZhbGlkYXRpb24iOnRydWV9&_smoothingWeight=0)
+
 #### owl-1617740459.2956355 ``` lr = 0.0000001 ```
 
 #### owl-1617742250.7367532 ``` lr = 0.00000001 ```
